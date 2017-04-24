@@ -1,0 +1,1058 @@
+<div class="apidocDiv">
+<style>
+/*csslint
+*/
+.apidocDiv {
+    background: #fff;
+    font-family: Arial, Helvetica, sans-serif;
+}
+.apidocDiv a[href] {
+    color: #33f;
+    font-weight: bold;
+    text-decoration: none;
+}
+.apidocDiv a[href]:hover {
+    text-decoration: underline;
+}
+.apidocCodeCommentSpan {
+    background: #bbf;
+    color: #000;
+    display: block;
+}
+.apidocCodeKeywordSpan {
+    color: #d00;
+    font-weight: bold;
+}
+.apidocCodePre {
+    background: #eef;
+    border: 1px solid;
+    color: #777;
+    padding: 5px;
+    white-space: pre-wrap;
+}
+.apidocFooterDiv {
+    margin-top: 20px;
+    text-align: center;
+}
+.apidocModuleLi {
+    margin-top: 10px;
+}
+.apidocSectionDiv {
+    border-top: 1px solid;
+    margin-top: 20px;
+}
+.apidocSignatureSpan {
+    color: #777;
+    font-weight: bold;
+}
+</style>
+<h1>api documentation for
+    <a
+
+        href="http://github.com/dominictarr/mux-demux"
+
+    >mux-demux (v3.7.9)</a>
+</h1>
+<h4>multiplex streams</h4>
+<div class="apidocSectionDiv"><a
+    href="#apidoc.tableOfContents"
+    id="apidoc.tableOfContents"
+><h1>table of contents</h1></a><ol>
+
+    <li class="apidocModuleLi"><a href="#apidoc.module.mux-demux">module mux-demux</a><ol>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.mux-demux.mux-demux">
+            function <span class="apidocSignatureSpan"></span>mux-demux
+            <span class="apidocSignatureSpan">(opts, onConnection)</span>
+            </a>
+
+        </li>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.mux-demux.jsonb">
+            function <span class="apidocSignatureSpan">mux-demux.</span>jsonb
+            <span class="apidocSignatureSpan">(opts, onConnection)</span>
+            </a>
+
+        </li>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.mux-demux.msgpack">
+            function <span class="apidocSignatureSpan">mux-demux.</span>msgpack
+            <span class="apidocSignatureSpan">(opts, onConnection)</span>
+            </a>
+
+        </li>
+
+    </ol></li>
+
+    <li class="apidocModuleLi"><a href="#apidoc.module.mux-demux.jsonb">module mux-demux.jsonb</a><ol>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.mux-demux.jsonb.jsonb">
+            function <span class="apidocSignatureSpan">mux-demux.</span>jsonb
+            <span class="apidocSignatureSpan">(opts, onConnection)</span>
+            </a>
+
+        </li>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.mux-demux.jsonb.wrap">
+            function <span class="apidocSignatureSpan">mux-demux.jsonb.</span>wrap
+            <span class="apidocSignatureSpan">(stream)</span>
+            </a>
+
+        </li>
+
+    </ol></li>
+
+    <li class="apidocModuleLi"><a href="#apidoc.module.mux-demux.msgpack">module mux-demux.msgpack</a><ol>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.mux-demux.msgpack.msgpack">
+            function <span class="apidocSignatureSpan">mux-demux.</span>msgpack
+            <span class="apidocSignatureSpan">(opts, onConnection)</span>
+            </a>
+
+        </li>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.mux-demux.msgpack.wrap">
+            function <span class="apidocSignatureSpan">mux-demux.msgpack.</span>wrap
+            <span class="apidocSignatureSpan">(stream)</span>
+            </a>
+
+        </li>
+
+    </ol></li>
+
+</ol></div>
+
+<div class="apidocSectionDiv">
+<h1><a href="#apidoc.module.mux-demux" id="apidoc.module.mux-demux">module mux-demux</a></h1>
+
+
+    <h2>
+        <a href="#apidoc.element.mux-demux.mux-demux" id="apidoc.element.mux-demux.mux-demux">
+        function <span class="apidocSignatureSpan"></span>mux-demux
+        <span class="apidocSignatureSpan">(opts, onConnection)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">function MuxDemux(opts, onConnection) {
+  if(&#x27;function&#x27; === typeof opts)
+    onConnection = opts, opts = null
+  opts = opts || {}
+
+  function createID() {
+    return (
+      Math.random().toString(16).slice(2) +
+      Math.random().toString(16).slice(2)
+    )
+  }
+
+  var streams = {}, streamCount = 0
+  var md = duplex()//.resume()
+
+  md.on(&#x27;_data&#x27;, function (data) {
+    if(!(Array.isArray(data)
+      &#x26;&#x26; &#x27;string&#x27; === typeof data[0]
+      &#x26;&#x26; &#x27;__proto__&#x27; !== data[0]
+      &#x26;&#x26; &#x27;string&#x27; === typeof data[1]
+      &#x26;&#x26; &#x27;__proto__&#x27; !== data[1]
+    )) return
+    var id = data.shift()
+    var event = data[0]
+    var s = streams[id]
+    if(!s) {
+      if(event == &#x27;close&#x27;)
+        return
+      if(event != &#x27;new&#x27;)
+        return outer.emit(&#x27;unknown&#x27;, id)
+      md.emit(&#x27;connection&#x27;, createStream(id, data[1].meta, data[1].opts))
+    }
+    else if (event === &#x27;pause&#x27;)
+      s.paused = true
+    else if (event === &#x27;resume&#x27;) {
+      var p = s.paused
+      s.paused = false
+      if(p) s.emit(&#x27;drain&#x27;)
+    }
+    else if (event === &#x27;error&#x27;) {
+      var error = data[1]
+      if (typeof error === &#x27;string&#x27;) {
+        s.emit(&#x27;error&#x27;, new Error(error))
+      } else if (typeof error.message === &#x27;string&#x27;) {
+        var e = new Error(error.message)
+        extend(e, error)
+        s.emit(&#x27;error&#x27;, e)
+      } else {
+        s.emit(&#x27;error&#x27;, error)
+      }
+    }
+    else {
+      s.emit.apply(s, data)
+    }
+  })
+  .on(&#x27;_end&#x27;, function () {
+    destroyAll()
+    md._end()
+  })
+
+  function destroyAll (_err) {
+    md.removeListener(&#x27;end&#x27;, destroyAll)
+    md.removeListener(&#x27;error&#x27;, destroyAll)
+    md.removeListener(&#x27;close&#x27;, destroyAll)
+    var err = _err || new Error (&#x27;unexpected disconnection&#x27;)
+    for (var i in streams) {
+      var s = streams[i]
+      s.destroyed = true
+      if (opts.error !== true) {
+        s.end()
+      } else {
+        s.emit(&#x27;error&#x27;, err)
+        s.destroy()
+      }
+    }
+  }
+
+  //end the stream once sub-streams have ended.
+  //(waits for them to close, like on a tcp server)
+
+  function createStream(id, meta, opts) {
+    streamCount ++
+    var s = through(function (data) {
+      if(!this.writable) {
+        var err = Error(&#x27;stream is not writable: &#x27; + id)
+        err.stream = this
+        return outer.emit(&#x22;error&#x22;, err)
+      }
+      md._data([s.id, &#x27;data&#x27;, data])
+    }, function () {
+      md._data([s.id, &#x27;end&#x27;])
+      if (this.readable &#x26;&#x26; !opts.allowHalfOpen &#x26;&#x26; !this.ended) {
+        this.emit(&#x22;end&#x22;)
+      }
+    })
+    s.pause = function () {
+      md._data([s.id, &#x27;pause&#x27;])
+    }
+    s.resume = function () {
+      md._data([s.id, &#x27;resume&#x27;])
+    }
+    s.error = function (message) {
+      md._data([s.id, &#x27;error&#x27;, message])
+    }
+    s.once(&#x27;close&#x27;, function () {
+      delete streams[id]
+      streamCount --
+      md._data([s.id, &#x27;close&#x27;])
+      if(streamCount === 0)
+        md.emit(&#x27;zero&#x27;)
+    })
+    s.writable = opts.writable
+    s.readable = opts.readable
+    streams[s.id = id] = s
+    s.meta = meta
+    return s
+  }
+
+  var outer = wrap(md, opts)
+
+  if(md !== outer) {
+    md.on(&#x27;connection&#x27;, function (stream) {
+      outer.emit(&#x27;connection&#x27;, stream)
+    })
+  }
+
+  outer.close = function (cb) {
+    md.once(&#x27;zero&#x27;, function () {
+      md._end()
+      if(cb) cb()
+    })
+    return this
+  }
+
+  if(onConnection)
+    outer.on(&#x27;connection&#x27;, onConnection)
+
+  outer.on(&#x27;connection&#x27;, function (stream) {
+    //if mux-demux recieves a stream but there is nothing to handle it,
+    //then return an error to the other side.
+    //still trying to think of the best error message.
+    if(outer.listeners(&#x27;connection&#x27;).length === 1)
+      stream.error(&#x27;remote end lacks connection listener &#x27;
+        + outer.listeners(&#x27;connection&#x27;).length)
+  })
+
+  var pipe = outer.pipe
+  outer.pipe = function (dest, opts) {
+    pipe.call(outer, dest, opts)
+    md.on(&#x27;end&#x27;, destroyAll)
+    md.on(&#x27;close&#x27;, destroyAll)
+    md.on(&#x27;error&#x27;, destroyAll)
+    return dest
+  }
+
+  outer.createStream = function (meta, opts) {
+    opts = opts || {}
+    if (!opts.writable &#x26;&#x26; !opts.readable)
+      opts.readable = opts.writable = true
+    var s = createStream(createID(), meta, opts)
+    var _opts = ...</pre></li>
+    <li>example usage<pre class="apidocCodePre">n/a</pre></li>
+    </ul>
+
+
+
+    <h2>
+        <a href="#apidoc.element.mux-demux.jsonb" id="apidoc.element.mux-demux.jsonb">
+        function <span class="apidocSignatureSpan">mux-demux.</span>jsonb
+        <span class="apidocSignatureSpan">(opts, onConnection)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">function MuxDemux(opts, onConnection) {
+  if(&#x27;function&#x27; === typeof opts)
+    onConnection = opts, opts = null
+  opts = opts || {}
+
+  function createID() {
+    return (
+      Math.random().toString(16).slice(2) +
+      Math.random().toString(16).slice(2)
+    )
+  }
+
+  var streams = {}, streamCount = 0
+  var md = duplex()//.resume()
+
+  md.on(&#x27;_data&#x27;, function (data) {
+    if(!(Array.isArray(data)
+      &#x26;&#x26; &#x27;string&#x27; === typeof data[0]
+      &#x26;&#x26; &#x27;__proto__&#x27; !== data[0]
+      &#x26;&#x26; &#x27;string&#x27; === typeof data[1]
+      &#x26;&#x26; &#x27;__proto__&#x27; !== data[1]
+    )) return
+    var id = data.shift()
+    var event = data[0]
+    var s = streams[id]
+    if(!s) {
+      if(event == &#x27;close&#x27;)
+        return
+      if(event != &#x27;new&#x27;)
+        return outer.emit(&#x27;unknown&#x27;, id)
+      md.emit(&#x27;connection&#x27;, createStream(id, data[1].meta, data[1].opts))
+    }
+    else if (event === &#x27;pause&#x27;)
+      s.paused = true
+    else if (event === &#x27;resume&#x27;) {
+      var p = s.paused
+      s.paused = false
+      if(p) s.emit(&#x27;drain&#x27;)
+    }
+    else if (event === &#x27;error&#x27;) {
+      var error = data[1]
+      if (typeof error === &#x27;string&#x27;) {
+        s.emit(&#x27;error&#x27;, new Error(error))
+      } else if (typeof error.message === &#x27;string&#x27;) {
+        var e = new Error(error.message)
+        extend(e, error)
+        s.emit(&#x27;error&#x27;, e)
+      } else {
+        s.emit(&#x27;error&#x27;, error)
+      }
+    }
+    else {
+      s.emit.apply(s, data)
+    }
+  })
+  .on(&#x27;_end&#x27;, function () {
+    destroyAll()
+    md._end()
+  })
+
+  function destroyAll (_err) {
+    md.removeListener(&#x27;end&#x27;, destroyAll)
+    md.removeListener(&#x27;error&#x27;, destroyAll)
+    md.removeListener(&#x27;close&#x27;, destroyAll)
+    var err = _err || new Error (&#x27;unexpected disconnection&#x27;)
+    for (var i in streams) {
+      var s = streams[i]
+      s.destroyed = true
+      if (opts.error !== true) {
+        s.end()
+      } else {
+        s.emit(&#x27;error&#x27;, err)
+        s.destroy()
+      }
+    }
+  }
+
+  //end the stream once sub-streams have ended.
+  //(waits for them to close, like on a tcp server)
+
+  function createStream(id, meta, opts) {
+    streamCount ++
+    var s = through(function (data) {
+      if(!this.writable) {
+        var err = Error(&#x27;stream is not writable: &#x27; + id)
+        err.stream = this
+        return outer.emit(&#x22;error&#x22;, err)
+      }
+      md._data([s.id, &#x27;data&#x27;, data])
+    }, function () {
+      md._data([s.id, &#x27;end&#x27;])
+      if (this.readable &#x26;&#x26; !opts.allowHalfOpen &#x26;&#x26; !this.ended) {
+        this.emit(&#x22;end&#x22;)
+      }
+    })
+    s.pause = function () {
+      md._data([s.id, &#x27;pause&#x27;])
+    }
+    s.resume = function () {
+      md._data([s.id, &#x27;resume&#x27;])
+    }
+    s.error = function (message) {
+      md._data([s.id, &#x27;error&#x27;, message])
+    }
+    s.once(&#x27;close&#x27;, function () {
+      delete streams[id]
+      streamCount --
+      md._data([s.id, &#x27;close&#x27;])
+      if(streamCount === 0)
+        md.emit(&#x27;zero&#x27;)
+    })
+    s.writable = opts.writable
+    s.readable = opts.readable
+    streams[s.id = id] = s
+    s.meta = meta
+    return s
+  }
+
+  var outer = wrap(md, opts)
+
+  if(md !== outer) {
+    md.on(&#x27;connection&#x27;, function (stream) {
+      outer.emit(&#x27;connection&#x27;, stream)
+    })
+  }
+
+  outer.close = function (cb) {
+    md.once(&#x27;zero&#x27;, function () {
+      md._end()
+      if(cb) cb()
+    })
+    return this
+  }
+
+  if(onConnection)
+    outer.on(&#x27;connection&#x27;, onConnection)
+
+  outer.on(&#x27;connection&#x27;, function (stream) {
+    //if mux-demux recieves a stream but there is nothing to handle it,
+    //then return an error to the other side.
+    //still trying to think of the best error message.
+    if(outer.listeners(&#x27;connection&#x27;).length === 1)
+      stream.error(&#x27;remote end lacks connection listener &#x27;
+        + outer.listeners(&#x27;connection&#x27;).length)
+  })
+
+  var pipe = outer.pipe
+  outer.pipe = function (dest, opts) {
+    pipe.call(outer, dest, opts)
+    md.on(&#x27;end&#x27;, destroyAll)
+    md.on(&#x27;close&#x27;, destroyAll)
+    md.on(&#x27;error&#x27;, destroyAll)
+    return dest
+  }
+
+  outer.createStream = function (meta, opts) {
+    opts = opts || {}
+    if (!opts.writable &#x26;&#x26; !opts.readable)
+      opts.readable = opts.writable = true
+    var s = createStream(createID(), meta, opts)
+    var _opts = ...</pre></li>
+    <li>example usage<pre class="apidocCodePre">n/a</pre></li>
+    </ul>
+
+
+
+    <h2>
+        <a href="#apidoc.element.mux-demux.msgpack" id="apidoc.element.mux-demux.msgpack">
+        function <span class="apidocSignatureSpan">mux-demux.</span>msgpack
+        <span class="apidocSignatureSpan">(opts, onConnection)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">function MuxDemux(opts, onConnection) {
+  if(&#x27;function&#x27; === typeof opts)
+    onConnection = opts, opts = null
+  opts = opts || {}
+
+  function createID() {
+    return (
+      Math.random().toString(16).slice(2) +
+      Math.random().toString(16).slice(2)
+    )
+  }
+
+  var streams = {}, streamCount = 0
+  var md = duplex()//.resume()
+
+  md.on(&#x27;_data&#x27;, function (data) {
+    if(!(Array.isArray(data)
+      &#x26;&#x26; &#x27;string&#x27; === typeof data[0]
+      &#x26;&#x26; &#x27;__proto__&#x27; !== data[0]
+      &#x26;&#x26; &#x27;string&#x27; === typeof data[1]
+      &#x26;&#x26; &#x27;__proto__&#x27; !== data[1]
+    )) return
+    var id = data.shift()
+    var event = data[0]
+    var s = streams[id]
+    if(!s) {
+      if(event == &#x27;close&#x27;)
+        return
+      if(event != &#x27;new&#x27;)
+        return outer.emit(&#x27;unknown&#x27;, id)
+      md.emit(&#x27;connection&#x27;, createStream(id, data[1].meta, data[1].opts))
+    }
+    else if (event === &#x27;pause&#x27;)
+      s.paused = true
+    else if (event === &#x27;resume&#x27;) {
+      var p = s.paused
+      s.paused = false
+      if(p) s.emit(&#x27;drain&#x27;)
+    }
+    else if (event === &#x27;error&#x27;) {
+      var error = data[1]
+      if (typeof error === &#x27;string&#x27;) {
+        s.emit(&#x27;error&#x27;, new Error(error))
+      } else if (typeof error.message === &#x27;string&#x27;) {
+        var e = new Error(error.message)
+        extend(e, error)
+        s.emit(&#x27;error&#x27;, e)
+      } else {
+        s.emit(&#x27;error&#x27;, error)
+      }
+    }
+    else {
+      s.emit.apply(s, data)
+    }
+  })
+  .on(&#x27;_end&#x27;, function () {
+    destroyAll()
+    md._end()
+  })
+
+  function destroyAll (_err) {
+    md.removeListener(&#x27;end&#x27;, destroyAll)
+    md.removeListener(&#x27;error&#x27;, destroyAll)
+    md.removeListener(&#x27;close&#x27;, destroyAll)
+    var err = _err || new Error (&#x27;unexpected disconnection&#x27;)
+    for (var i in streams) {
+      var s = streams[i]
+      s.destroyed = true
+      if (opts.error !== true) {
+        s.end()
+      } else {
+        s.emit(&#x27;error&#x27;, err)
+        s.destroy()
+      }
+    }
+  }
+
+  //end the stream once sub-streams have ended.
+  //(waits for them to close, like on a tcp server)
+
+  function createStream(id, meta, opts) {
+    streamCount ++
+    var s = through(function (data) {
+      if(!this.writable) {
+        var err = Error(&#x27;stream is not writable: &#x27; + id)
+        err.stream = this
+        return outer.emit(&#x22;error&#x22;, err)
+      }
+      md._data([s.id, &#x27;data&#x27;, data])
+    }, function () {
+      md._data([s.id, &#x27;end&#x27;])
+      if (this.readable &#x26;&#x26; !opts.allowHalfOpen &#x26;&#x26; !this.ended) {
+        this.emit(&#x22;end&#x22;)
+      }
+    })
+    s.pause = function () {
+      md._data([s.id, &#x27;pause&#x27;])
+    }
+    s.resume = function () {
+      md._data([s.id, &#x27;resume&#x27;])
+    }
+    s.error = function (message) {
+      md._data([s.id, &#x27;error&#x27;, message])
+    }
+    s.once(&#x27;close&#x27;, function () {
+      delete streams[id]
+      streamCount --
+      md._data([s.id, &#x27;close&#x27;])
+      if(streamCount === 0)
+        md.emit(&#x27;zero&#x27;)
+    })
+    s.writable = opts.writable
+    s.readable = opts.readable
+    streams[s.id = id] = s
+    s.meta = meta
+    return s
+  }
+
+  var outer = wrap(md, opts)
+
+  if(md !== outer) {
+    md.on(&#x27;connection&#x27;, function (stream) {
+      outer.emit(&#x27;connection&#x27;, stream)
+    })
+  }
+
+  outer.close = function (cb) {
+    md.once(&#x27;zero&#x27;, function () {
+      md._end()
+      if(cb) cb()
+    })
+    return this
+  }
+
+  if(onConnection)
+    outer.on(&#x27;connection&#x27;, onConnection)
+
+  outer.on(&#x27;connection&#x27;, function (stream) {
+    //if mux-demux recieves a stream but there is nothing to handle it,
+    //then return an error to the other side.
+    //still trying to think of the best error message.
+    if(outer.listeners(&#x27;connection&#x27;).length === 1)
+      stream.error(&#x27;remote end lacks connection listener &#x27;
+        + outer.listeners(&#x27;connection&#x27;).length)
+  })
+
+  var pipe = outer.pipe
+  outer.pipe = function (dest, opts) {
+    pipe.call(outer, dest, opts)
+    md.on(&#x27;end&#x27;, destroyAll)
+    md.on(&#x27;close&#x27;, destroyAll)
+    md.on(&#x27;error&#x27;, destroyAll)
+    return dest
+  }
+
+  outer.createStream = function (meta, opts) {
+    opts = opts || {}
+    if (!opts.writable &#x26;&#x26; !opts.readable)
+      opts.readable = opts.writable = true
+    var s = createStream(createID(), meta, opts)
+    var _opts = ...</pre></li>
+    <li>example usage<pre class="apidocCodePre">n/a</pre></li>
+    </ul>
+
+
+</div>
+
+<div class="apidocSectionDiv">
+<h1><a href="#apidoc.module.mux-demux.jsonb" id="apidoc.module.mux-demux.jsonb">module mux-demux.jsonb</a></h1>
+
+
+    <h2>
+        <a href="#apidoc.element.mux-demux.jsonb.jsonb" id="apidoc.element.mux-demux.jsonb.jsonb">
+        function <span class="apidocSignatureSpan">mux-demux.</span>jsonb
+        <span class="apidocSignatureSpan">(opts, onConnection)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">function MuxDemux(opts, onConnection) {
+  if(&#x27;function&#x27; === typeof opts)
+    onConnection = opts, opts = null
+  opts = opts || {}
+
+  function createID() {
+    return (
+      Math.random().toString(16).slice(2) +
+      Math.random().toString(16).slice(2)
+    )
+  }
+
+  var streams = {}, streamCount = 0
+  var md = duplex()//.resume()
+
+  md.on(&#x27;_data&#x27;, function (data) {
+    if(!(Array.isArray(data)
+      &#x26;&#x26; &#x27;string&#x27; === typeof data[0]
+      &#x26;&#x26; &#x27;__proto__&#x27; !== data[0]
+      &#x26;&#x26; &#x27;string&#x27; === typeof data[1]
+      &#x26;&#x26; &#x27;__proto__&#x27; !== data[1]
+    )) return
+    var id = data.shift()
+    var event = data[0]
+    var s = streams[id]
+    if(!s) {
+      if(event == &#x27;close&#x27;)
+        return
+      if(event != &#x27;new&#x27;)
+        return outer.emit(&#x27;unknown&#x27;, id)
+      md.emit(&#x27;connection&#x27;, createStream(id, data[1].meta, data[1].opts))
+    }
+    else if (event === &#x27;pause&#x27;)
+      s.paused = true
+    else if (event === &#x27;resume&#x27;) {
+      var p = s.paused
+      s.paused = false
+      if(p) s.emit(&#x27;drain&#x27;)
+    }
+    else if (event === &#x27;error&#x27;) {
+      var error = data[1]
+      if (typeof error === &#x27;string&#x27;) {
+        s.emit(&#x27;error&#x27;, new Error(error))
+      } else if (typeof error.message === &#x27;string&#x27;) {
+        var e = new Error(error.message)
+        extend(e, error)
+        s.emit(&#x27;error&#x27;, e)
+      } else {
+        s.emit(&#x27;error&#x27;, error)
+      }
+    }
+    else {
+      s.emit.apply(s, data)
+    }
+  })
+  .on(&#x27;_end&#x27;, function () {
+    destroyAll()
+    md._end()
+  })
+
+  function destroyAll (_err) {
+    md.removeListener(&#x27;end&#x27;, destroyAll)
+    md.removeListener(&#x27;error&#x27;, destroyAll)
+    md.removeListener(&#x27;close&#x27;, destroyAll)
+    var err = _err || new Error (&#x27;unexpected disconnection&#x27;)
+    for (var i in streams) {
+      var s = streams[i]
+      s.destroyed = true
+      if (opts.error !== true) {
+        s.end()
+      } else {
+        s.emit(&#x27;error&#x27;, err)
+        s.destroy()
+      }
+    }
+  }
+
+  //end the stream once sub-streams have ended.
+  //(waits for them to close, like on a tcp server)
+
+  function createStream(id, meta, opts) {
+    streamCount ++
+    var s = through(function (data) {
+      if(!this.writable) {
+        var err = Error(&#x27;stream is not writable: &#x27; + id)
+        err.stream = this
+        return outer.emit(&#x22;error&#x22;, err)
+      }
+      md._data([s.id, &#x27;data&#x27;, data])
+    }, function () {
+      md._data([s.id, &#x27;end&#x27;])
+      if (this.readable &#x26;&#x26; !opts.allowHalfOpen &#x26;&#x26; !this.ended) {
+        this.emit(&#x22;end&#x22;)
+      }
+    })
+    s.pause = function () {
+      md._data([s.id, &#x27;pause&#x27;])
+    }
+    s.resume = function () {
+      md._data([s.id, &#x27;resume&#x27;])
+    }
+    s.error = function (message) {
+      md._data([s.id, &#x27;error&#x27;, message])
+    }
+    s.once(&#x27;close&#x27;, function () {
+      delete streams[id]
+      streamCount --
+      md._data([s.id, &#x27;close&#x27;])
+      if(streamCount === 0)
+        md.emit(&#x27;zero&#x27;)
+    })
+    s.writable = opts.writable
+    s.readable = opts.readable
+    streams[s.id = id] = s
+    s.meta = meta
+    return s
+  }
+
+  var outer = wrap(md, opts)
+
+  if(md !== outer) {
+    md.on(&#x27;connection&#x27;, function (stream) {
+      outer.emit(&#x27;connection&#x27;, stream)
+    })
+  }
+
+  outer.close = function (cb) {
+    md.once(&#x27;zero&#x27;, function () {
+      md._end()
+      if(cb) cb()
+    })
+    return this
+  }
+
+  if(onConnection)
+    outer.on(&#x27;connection&#x27;, onConnection)
+
+  outer.on(&#x27;connection&#x27;, function (stream) {
+    //if mux-demux recieves a stream but there is nothing to handle it,
+    //then return an error to the other side.
+    //still trying to think of the best error message.
+    if(outer.listeners(&#x27;connection&#x27;).length === 1)
+      stream.error(&#x27;remote end lacks connection listener &#x27;
+        + outer.listeners(&#x27;connection&#x27;).length)
+  })
+
+  var pipe = outer.pipe
+  outer.pipe = function (dest, opts) {
+    pipe.call(outer, dest, opts)
+    md.on(&#x27;end&#x27;, destroyAll)
+    md.on(&#x27;close&#x27;, destroyAll)
+    md.on(&#x27;error&#x27;, destroyAll)
+    return dest
+  }
+
+  outer.createStream = function (meta, opts) {
+    opts = opts || {}
+    if (!opts.writable &#x26;&#x26; !opts.readable)
+      opts.readable = opts.writable = true
+    var s = createStream(createID(), meta, opts)
+    var _opts = ...</pre></li>
+    <li>example usage<pre class="apidocCodePre">n/a</pre></li>
+    </ul>
+
+
+
+    <h2>
+        <a href="#apidoc.element.mux-demux.jsonb.wrap" id="apidoc.element.mux-demux.jsonb.wrap">
+        function <span class="apidocSignatureSpan">mux-demux.jsonb.</span>wrap
+        <span class="apidocSignatureSpan">(stream)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">function wrap(stream) {
+  return serializer.json(stream, JSONB)
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">n/a</pre></li>
+    </ul>
+
+
+</div>
+
+<div class="apidocSectionDiv">
+<h1><a href="#apidoc.module.mux-demux.msgpack" id="apidoc.module.mux-demux.msgpack">module mux-demux.msgpack</a></h1>
+
+
+    <h2>
+        <a href="#apidoc.element.mux-demux.msgpack.msgpack" id="apidoc.element.mux-demux.msgpack.msgpack">
+        function <span class="apidocSignatureSpan">mux-demux.</span>msgpack
+        <span class="apidocSignatureSpan">(opts, onConnection)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">function MuxDemux(opts, onConnection) {
+  if(&#x27;function&#x27; === typeof opts)
+    onConnection = opts, opts = null
+  opts = opts || {}
+
+  function createID() {
+    return (
+      Math.random().toString(16).slice(2) +
+      Math.random().toString(16).slice(2)
+    )
+  }
+
+  var streams = {}, streamCount = 0
+  var md = duplex()//.resume()
+
+  md.on(&#x27;_data&#x27;, function (data) {
+    if(!(Array.isArray(data)
+      &#x26;&#x26; &#x27;string&#x27; === typeof data[0]
+      &#x26;&#x26; &#x27;__proto__&#x27; !== data[0]
+      &#x26;&#x26; &#x27;string&#x27; === typeof data[1]
+      &#x26;&#x26; &#x27;__proto__&#x27; !== data[1]
+    )) return
+    var id = data.shift()
+    var event = data[0]
+    var s = streams[id]
+    if(!s) {
+      if(event == &#x27;close&#x27;)
+        return
+      if(event != &#x27;new&#x27;)
+        return outer.emit(&#x27;unknown&#x27;, id)
+      md.emit(&#x27;connection&#x27;, createStream(id, data[1].meta, data[1].opts))
+    }
+    else if (event === &#x27;pause&#x27;)
+      s.paused = true
+    else if (event === &#x27;resume&#x27;) {
+      var p = s.paused
+      s.paused = false
+      if(p) s.emit(&#x27;drain&#x27;)
+    }
+    else if (event === &#x27;error&#x27;) {
+      var error = data[1]
+      if (typeof error === &#x27;string&#x27;) {
+        s.emit(&#x27;error&#x27;, new Error(error))
+      } else if (typeof error.message === &#x27;string&#x27;) {
+        var e = new Error(error.message)
+        extend(e, error)
+        s.emit(&#x27;error&#x27;, e)
+      } else {
+        s.emit(&#x27;error&#x27;, error)
+      }
+    }
+    else {
+      s.emit.apply(s, data)
+    }
+  })
+  .on(&#x27;_end&#x27;, function () {
+    destroyAll()
+    md._end()
+  })
+
+  function destroyAll (_err) {
+    md.removeListener(&#x27;end&#x27;, destroyAll)
+    md.removeListener(&#x27;error&#x27;, destroyAll)
+    md.removeListener(&#x27;close&#x27;, destroyAll)
+    var err = _err || new Error (&#x27;unexpected disconnection&#x27;)
+    for (var i in streams) {
+      var s = streams[i]
+      s.destroyed = true
+      if (opts.error !== true) {
+        s.end()
+      } else {
+        s.emit(&#x27;error&#x27;, err)
+        s.destroy()
+      }
+    }
+  }
+
+  //end the stream once sub-streams have ended.
+  //(waits for them to close, like on a tcp server)
+
+  function createStream(id, meta, opts) {
+    streamCount ++
+    var s = through(function (data) {
+      if(!this.writable) {
+        var err = Error(&#x27;stream is not writable: &#x27; + id)
+        err.stream = this
+        return outer.emit(&#x22;error&#x22;, err)
+      }
+      md._data([s.id, &#x27;data&#x27;, data])
+    }, function () {
+      md._data([s.id, &#x27;end&#x27;])
+      if (this.readable &#x26;&#x26; !opts.allowHalfOpen &#x26;&#x26; !this.ended) {
+        this.emit(&#x22;end&#x22;)
+      }
+    })
+    s.pause = function () {
+      md._data([s.id, &#x27;pause&#x27;])
+    }
+    s.resume = function () {
+      md._data([s.id, &#x27;resume&#x27;])
+    }
+    s.error = function (message) {
+      md._data([s.id, &#x27;error&#x27;, message])
+    }
+    s.once(&#x27;close&#x27;, function () {
+      delete streams[id]
+      streamCount --
+      md._data([s.id, &#x27;close&#x27;])
+      if(streamCount === 0)
+        md.emit(&#x27;zero&#x27;)
+    })
+    s.writable = opts.writable
+    s.readable = opts.readable
+    streams[s.id = id] = s
+    s.meta = meta
+    return s
+  }
+
+  var outer = wrap(md, opts)
+
+  if(md !== outer) {
+    md.on(&#x27;connection&#x27;, function (stream) {
+      outer.emit(&#x27;connection&#x27;, stream)
+    })
+  }
+
+  outer.close = function (cb) {
+    md.once(&#x27;zero&#x27;, function () {
+      md._end()
+      if(cb) cb()
+    })
+    return this
+  }
+
+  if(onConnection)
+    outer.on(&#x27;connection&#x27;, onConnection)
+
+  outer.on(&#x27;connection&#x27;, function (stream) {
+    //if mux-demux recieves a stream but there is nothing to handle it,
+    //then return an error to the other side.
+    //still trying to think of the best error message.
+    if(outer.listeners(&#x27;connection&#x27;).length === 1)
+      stream.error(&#x27;remote end lacks connection listener &#x27;
+        + outer.listeners(&#x27;connection&#x27;).length)
+  })
+
+  var pipe = outer.pipe
+  outer.pipe = function (dest, opts) {
+    pipe.call(outer, dest, opts)
+    md.on(&#x27;end&#x27;, destroyAll)
+    md.on(&#x27;close&#x27;, destroyAll)
+    md.on(&#x27;error&#x27;, destroyAll)
+    return dest
+  }
+
+  outer.createStream = function (meta, opts) {
+    opts = opts || {}
+    if (!opts.writable &#x26;&#x26; !opts.readable)
+      opts.readable = opts.writable = true
+    var s = createStream(createID(), meta, opts)
+    var _opts = ...</pre></li>
+    <li>example usage<pre class="apidocCodePre">n/a</pre></li>
+    </ul>
+
+
+
+    <h2>
+        <a href="#apidoc.element.mux-demux.msgpack.wrap" id="apidoc.element.mux-demux.msgpack.wrap">
+        function <span class="apidocSignatureSpan">mux-demux.msgpack.</span>wrap
+        <span class="apidocSignatureSpan">(stream)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">function wrap(stream) {
+  return combine(
+    msgpack.createDecodeStream(),
+    stream,
+    msgpack.createEncodeStream()
+  )
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">n/a</pre></li>
+    </ul>
+
+
+</div>
+
+<div class="apidocFooterDiv">
+    [ this document was created with
+    <a href="https://github.com/kaizhu256/node-utility2" target="_blank">utility2</a>
+    ]
+</div>
+</div>
